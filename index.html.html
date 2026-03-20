@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TA Meeting Dashboard – AGPT Training Team</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Georgia, serif; background: #f5f3ef; min-height: 100vh; color: #374151; }
+
+.header { background: #1a3a2a; color: #e8e4dc; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 19px; font-weight: normal; }
+.header .sub { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8fba9f; margin-bottom: 3px; }
+.header-right { display: flex; align-items: center; gap: 14px; }
+.header-reg { text-align: right; }
+.header-reg-name { font-size: 15px; font-weight: bold; color: #c5e8d0; }
+.header-reg-sub { font-size: 12px; color: #8fba9f; }
+
+.guide { background: #fffbeb; border-bottom: 1px solid #fbbf24; padding: 18px 28px; display: none; }
+.guide h3 { color: #92400e; font-size: 14px; margin-bottom: 10px; }
+.guide-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; font-size: 13px; }
+.guide-grid strong { color: #1a3a2a; display: block; margin-bottom: 4px; }
+
+.tabs { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 28px; display: flex; align-items: center; }
+.tab { padding: 13px 22px; border: none; border-bottom: 3px solid transparent; background: transparent; cursor: pointer; font-size: 13px; color: #6b7280; font-family: Georgia, serif; }
+.tab.active { color: #1a3a2a; border-bottom-color: #1a3a2a; font-weight: bold; }
+.progress-wrap { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.progress-bar { width: 100px; height: 5px; background: #e5e7eb; border-radius: 3px; }
+.progress-fill { height: 100%; background: #1a3a2a; border-radius: 3px; transition: width 0.3s; }
+
+.phase { display: none; }
+.phase.active { display: block; }
+
+/* SETUP */
+.setup-wrap { max-width: 760px; margin: 28px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.setup-full { grid-column: 1 / -1; }
+.card { background: #fff; border-radius: 8px; padding: 26px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+.card h2 { font-size: 17px; color: #1a3a2a; font-weight: normal; margin-bottom: 4px; }
+.card p.sub { color: #9ca3af; font-size: 13px; margin-bottom: 20px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.span2 { grid-column: 1 / -1; }
+.field-label { font-size: 13px; font-weight: 600; color: #374151; display: block; margin-bottom: 5px; }
+.field-label span { color: #9ca3af; font-weight: normal; }
+input[type=text], select, textarea { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 14px; font-family: Georgia, serif; color: #374151; background: #fff; }
+input[type=text]:focus, select:focus, textarea:focus { outline: none; border-color: #1a3a2a; }
+textarea { resize: vertical; }
+.checkbox-row { display: flex; align-items: center; gap: 9px; background: #f9fafb; padding: 10px 13px; border-radius: 6px; }
+.checkbox-row input { width: 15px; height: 15px; accent-color: #1a3a2a; flex-shrink: 0; }
+.checkbox-row label { font-size: 13px; color: #374151; cursor: pointer; }
+.alert { border-radius: 6px; padding: 9px 13px; font-size: 13px; margin-top: 10px; }
+.alert-yellow { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
+.alert-blue { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+.alert-green { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+.btn-primary { width: 100%; padding: 12px; background: #1a3a2a; color: #fff; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; font-family: Georgia, serif; margin-top: 18px; }
+.btn-primary:disabled { background: #d1d5db; cursor: not-allowed; }
+
+/* SAVED REGISTRARS LIST */
+.reg-list { }
+.reg-list h3 { font-size: 11px; color: #1a3a2a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+.reg-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+.reg-item:hover { border-color: #8fba9f; background: #f9fafb; }
+.reg-item-info { flex: 1; }
+.reg-item-name { font-size: 14px; color: #1a3a2a; font-weight: bold; }
+.reg-item-sub { font-size: 12px; color: #9ca3af; }
+.reg-item-badge { font-size: 11px; background: #f0f7f3; color: #1a3a2a; border-radius: 10px; padding: 2px 8px; white-space: nowrap; }
+.reg-item-badge.complete { background: #f0fdf4; color: #166534; }
+.reg-delete { background: none; border: none; color: #d1d5db; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+.reg-delete:hover { color: #ef4444; background: #fef2f2; }
+.empty-state { text-align: center; color: #9ca3af; font-size: 13px; padding: 20px; border: 1.5px dashed #e5e7eb; border-radius: 6px; }
+
+.dates-card h3 { font-size: 11px; color: #1a3a2a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.date-item { font-size: 13px; color: #4b5563; padding: 4px 0; border-bottom: 1px solid #f3f4f6; }
+.date-item:last-child { border-bottom: none; }
+
+/* MEETING */
+.meeting-wrap { display: flex; max-width: 1080px; margin: 0 auto; padding: 20px 20px; gap: 18px; }
+.sidebar { width: 200px; flex-shrink: 0; }
+.sidebar-inner { background: #fff; border-radius: 8px; padding: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 14px; }
+.sidebar-note { font-size: 11px; background: #eff6ff; color: #1e40af; padding: 7px 9px; border-radius: 5px; margin-bottom: 9px; line-height: 1.5; }
+.nav-btn { display: flex; align-items: center; gap: 7px; width: 100%; padding: 7px 9px; margin-bottom: 2px; background: transparent; border: 1.5px solid transparent; border-radius: 6px; cursor: pointer; text-align: left; font-family: Georgia, serif; }
+.nav-btn.active { background: #f0f7f3; border-color: #8fba9f; }
+.nav-btn .nav-title { flex: 1; font-size: 12px; color: #4b5563; }
+.nav-btn.active .nav-title { color: #1a3a2a; }
+.nav-btn .nav-check { font-size: 10px; color: #d1d5db; }
+.nav-btn .nav-check.done { color: #059669; }
+.btn-generate { margin-top: 9px; width: 100%; padding: 10px; background: #059669; color: #fff; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: Georgia, serif; }
+.save-indicator { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 8px; }
+
+.main-panel { flex: 1; }
+.section-card { background: #fff; border-radius: 8px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.section-header h2 { font-size: 18px; color: #1a3a2a; font-weight: normal; }
+.section-sub { font-size: 11px; color: #9ca3af; margin-bottom: 20px; }
+.question-block { margin-bottom: 24px; }
+.question-text { font-size: 15px; color: #1a3a2a; font-style: italic; line-height: 1.4; margin-bottom: 5px; }
+.question-hint { font-size: 12px; color: #b0b7c3; background: #f9fafb; padding: 5px 10px; border-radius: 4px; margin-bottom: 7px; }
+.notes-area { width: 100%; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 6px; font-size: 14px; resize: vertical; font-family: Georgia, serif; color: #374151; line-height: 1.6; }
+.notes-area:focus { outline: none; border-color: #1a3a2a; }
+.nav-row { display: flex; justify-content: space-between; margin-top: 6px; }
+.btn-back { padding: 9px 17px; background: #f3f4f6; border: none; border-radius: 6px; cursor: pointer; color: #374151; font-family: Georgia, serif; font-size: 14px; }
+.btn-back:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-next { padding: 9px 20px; background: #1a3a2a; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; }
+.btn-finish { padding: 9px 20px; background: #059669; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; }
+
+/* SUMMARY */
+.summary-wrap { max-width: 760px; margin: 28px auto; padding: 0 20px; }
+.summary-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.summary-header h2 { font-size: 18px; color: #1a3a2a; font-weight: normal; margin-bottom: 3px; }
+.summary-header p { color: #9ca3af; font-size: 13px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-sm { padding: 7px 13px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: Georgia, serif; }
+.btn-sm-grey { background: #f3f4f6; color: #374151; }
+.btn-sm-green { background: #1a3a2a; color: #fff; }
+.btn-sm-green.copied { background: #059669; }
+.summary-text { width: 100%; padding: 15px; border: 1.5px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: 'Courier New', monospace; line-height: 1.8; resize: vertical; color: #374151; margin-bottom: 14px; }
+.btn-big-row { display: flex; gap: 10px; }
+.btn-copy-big { flex: 1; padding: 12px; background: #1a3a2a; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: Georgia, serif; }
+.btn-copy-big.copied { background: #059669; }
+.btn-complete { padding: 12px 20px; background: #f3f4f6; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: Georgia, serif; color: #374151; }
+.btn-complete-done { padding: 12px 20px; background: #ef4444; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: Georgia, serif; }
+
+/* Header buttons */
+.hdr-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; font-family: Georgia, serif; }
+
+@media (max-width: 680px) {
+  .setup-wrap { grid-template-columns: 1fr; }
+  .setup-full { grid-column: 1; }
+  .form-grid { grid-template-columns: 1fr; }
+  .span2 { grid-column: 1; }
+  .guide-grid { grid-template-columns: 1fr; }
+  .meeting-wrap { flex-direction: column; }
+  .sidebar { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="sub">AGPT Training Team</div>
+    <h1>Training Advice Meeting Dashboard</h1>
+  </div>
+  <div class="header-right">
+    <div id="headerRegistrar" style="display:none;" class="header-reg">
+      <div class="header-reg-name" id="headerName"></div>
+      <div class="header-reg-sub" id="headerSub"></div>
+    </div>
+    <button class="hdr-btn" onclick="toggleGuide()">❓ How to Use</button>
+  </div>
+</div>
+
+<div class="guide" id="guide">
+  <h3>How to Use This Dashboard</h3>
+  <div class="guide-grid">
+    <div><strong>① Prep days before (~5 min each)</strong>Add each registrar using the form. Details save automatically — come back any time to continue. All 38 can be stored at once.</div>
+    <div><strong>② During the meeting (~30 min)</strong>Select the registrar from the list, click Continue Meeting. Work through each section — questions in italics are how to phrase them. Notes auto-save as you type.</div>
+    <div><strong>③ After the meeting (~2 min)</strong>Click Generate Summary for a journal-style entry ready to paste into your training system. When done, click Mark Complete & Remove to clear them from the list.</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-setup" onclick="goToTab('setup')">1. Registrars</button>
+  <button class="tab" id="tab-meeting" onclick="canGoMeeting() && goToTab('meeting')">2. Meeting</button>
+  <button class="tab" id="tab-summary" onclick="canGoSummary() && goToTab('summary')">3. Summary</button>
+  <div class="progress-wrap" id="progressWrap" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span style="font-size:12px;color:#6b7280;" id="progressPct">0%</span>
+  </div>
+</div>
+
+<!-- SETUP / REGISTRAR LIST PHASE -->
+<div class="phase active" id="phase-setup">
+  <div class="setup-wrap">
+
+    <!-- Add / Edit Registrar Form -->
+    <div class="card setup-full" id="formCard">
+      <h2 id="formTitle">Add Registrar</h2>
+      <p class="sub">Details save automatically — you can close and come back any time</p>
+      <div class="form-grid">
+        <div class="span2">
+          <label class="field-label">Registrar Name *</label>
+          <input type="text" id="f-name" placeholder="Dr First Last" oninput="formChanged()">
+        </div>
+        <div>
+          <label class="field-label">Training Level</label>
+          <select id="f-level" onchange="formChanged()">
+            <option>GPT1</option><option>GPT2</option><option>GPT3</option><option>GPT3+</option><option>Extended Skills</option><option>Extension Assessment</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Current Practice</label>
+          <input type="text" id="f-practice" placeholder="Practice name" oninput="formChanged()">
+        </div>
+        <div class="span2">
+          <label class="field-label">Supervisor</label>
+          <input type="text" id="f-supervisor" placeholder="Supervisor name" oninput="formChanged()">
+        </div>
+        <div>
+          <label class="field-label">Meeting Date</label>
+          <input type="date" id="f-meetingdate" oninput="formChanged()">
+        </div>
+        <div>
+          <label class="field-label">Meeting Time</label>
+          <input type="time" id="f-meetingtime" oninput="formChanged()">
+        </div>
+        <div class="span2">
+          <label class="field-label">Upcoming, Overdue / Outstanding Training Requirements <span>(one per line)</span></label>
+          <textarea id="f-overdue" rows="3" placeholder="e.g. MSF due by 31/3&#10;Mini-CEX not yet completed&#10;Leave blank if none" oninput="formChanged()"></textarea>
+        </div>
+        <div class="span2">
+          <label class="field-label">Pre-meeting Notes <span>(anything to remember to raise)</span></label>
+          <textarea id="f-notes" rows="2" placeholder="Context from previous meetings, flags, things to follow up..." oninput="formChanged()"></textarea>
+        </div>
+        <div class="span2 checkbox-row">
+          <input type="checkbox" id="f-exams" onchange="formChanged()">
+          <label for="f-exams">Include exam section <span style="color:#9ca3af">(auto-included for GPT2, GPT3, GPT3+)</span></label>
+        </div>
+      </div>
+      <div id="formAlerts"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn-primary" id="saveFormBtn" onclick="saveRegistrar()" disabled style="margin-top:0;">Save Registrar</button>
+        <button class="btn-primary" id="cancelEditBtn" onclick="cancelEdit()" style="margin-top:0;background:#6b7280;display:none;">Cancel</button>
+      </div>
+      <div id="savedIndicator" class="alert alert-green" style="display:none;margin-top:10px;">✓ Saved automatically</div>
+    </div>
+
+    <!-- Saved Registrars List -->
+    <div class="card" style="grid-column:1/-1;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+        <h3 style="font-size:11px;color:#1a3a2a;letter-spacing:1.5px;text-transform:uppercase;margin:0;">Saved Registrars <span id="regCount" style="color:#9ca3af;font-weight:normal;"></span></h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span id="importExportMsg" style="font-size:12px;color:#059669;"></span>
+          <button onclick="exportData()" style="font-size:12px;padding:6px 14px;background:#1a3a2a;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;">⬇ Export Backup</button>
+          <label style="font-size:12px;padding:6px 14px;background:#f3f4f6;color:#374151;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;margin:0;">
+            ⬆ Import Backup
+            <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+          </label>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#9ca3af;margin-bottom:12px;">Use <strong>Export Backup</strong> before switching devices. On the new device, open the dashboard and click <strong>Import Backup</strong> to restore everything.</p>
+      <div id="registrarList"></div>
+    </div>
+
+    <!-- Key Dates (editable) -->
+    <div class="card" style="grid-column:1/-1;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 style="font-size:11px;color:#1a3a2a;letter-spacing:1.5px;text-transform:uppercase;margin:0;">Key Dates &amp; Links</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:11px;color:#9ca3af;" id="datesSaveMsg"></span>
+          <button onclick="addDateRow()" style="font-size:12px;padding:4px 10px;background:#1a3a2a;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;">+ Add Row</button>
+          <button onclick="resetDates()" style="font-size:12px;padding:4px 10px;background:#f3f4f6;color:#6b7280;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;">Reset to Defaults</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#9ca3af;margin-bottom:10px;">Click any row to edit the text. Paste a URL into the link field to make it clickable. Drag 🟰 to reorder. Changes save automatically.</p>
+      <div id="datesContainer"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MEETING PHASE -->
+<div class="phase" id="phase-meeting">
+  <div class="meeting-wrap">
+    <div class="sidebar">
+      <div class="sidebar-inner">
+        <div class="sidebar-note" id="sidebarNote" style="display:none;"></div>
+        <div id="navButtons"></div>
+        <button class="btn-generate" onclick="goToSummary()">Generate Summary →</button>
+        <div class="save-indicator" id="saveIndicator">✓ Auto-saving</div>
+      </div>
+    </div>
+    <div class="main-panel">
+      <div class="section-card" id="sectionCard"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY PHASE -->
+<div class="phase" id="phase-summary">
+  <div style="max-width:1100px;margin:28px auto;padding:0 20px;display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;">
+
+    <!-- Left: Summary text -->
+    <div class="card">
+      <div class="summary-header">
+        <div>
+          <h2>Meeting Summary</h2>
+          <p>Edit if needed, then copy and paste into the training system</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn-sm btn-sm-grey" onclick="goToTab('meeting')">← Edit Notes</button>
+          <button class="btn-sm btn-sm-green" id="copyBtnTop" onclick="copySummary()">Copy to Clipboard</button>
+        </div>
+      </div>
+      <textarea class="summary-text" id="summaryText" rows="30"></textarea>
+      <div class="btn-big-row">
+        <button class="btn-copy-big" id="copyBtnBig" onclick="copySummary()">Copy Summary</button>
+        <button class="btn-complete-done" onclick="markComplete()">✓ Done — Remove Registrar</button>
+      </div>
+      <div class="alert alert-blue" style="margin-top:12px;font-size:12px;">
+        💡 Click <strong>"Done — Remove Registrar"</strong> once you've pasted the summary into the training system.
+      </div>
+    </div>
+
+    <!-- Right: Key Dates & Links panel -->
+    <div class="card" style="position:sticky;top:16px;">
+      <h3 style="font-size:11px;color:#1a3a2a;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Key Dates &amp; Links</h3>
+      <p style="font-size:12px;color:#9ca3af;margin-bottom:12px;">Tick to include in summary. Click 🔗 to open link.</p>
+      <div id="summaryLinksList"></div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6;">
+        <button onclick="checkAllLinks(true)" style="font-size:12px;padding:4px 10px;background:#f3f4f6;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;color:#374151;margin-right:6px;">Select All</button>
+        <button onclick="checkAllLinks(false)" style="font-size:12px;padding:4px 10px;background:#f3f4f6;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;color:#374151;">Clear All</button>
+      </div>
+      <p style="font-size:11px;color:#9ca3af;margin-top:10px;">Manage dates &amp; links in the <strong>Registrars</strong> tab.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const EXAM_LEVELS = ["GPT2","GPT3","GPT3+"];
+const STORAGE_KEY = "ta_dashboard_v2";
+
+const SECTIONS = [
+  { id:"wellbeing", title:"Wellbeing", icon:"🌿", questions:[
+    { id:"wellbeing_general", q:"How are you going? How's life outside of work?", hint:"Personal/family situation, accommodation, settling in, work-life balance, support services needed" },
+    { id:"wellbeing_support", q:"Is there anything we can do to support you?", hint:"EAP, DRS4DRS, RACGP wellbeing, NTCER — mention if relevant" }
+  ]},
+  { id:"placement", title:"Current Placement", icon:"🏥", questions:[
+    { id:"placement_overview", q:"How are things going at your current placement overall?", hint:"Workload, days/hours, FT vs PT, patient load, telehealth, variety of presentations" },
+    { id:"placement_supervisor", q:"How's your relationship with your supervisor?", hint:"Supervision plan, teaching time, face-to-face, availability, how they ask for help" },
+    { id:"placement_site", q:"How's the practice itself — team, systems, resources?", hint:"Induction done? Contract in place? Practice staff, software, equipment, billing, rosters" },
+    { id:"placement_wba", q:"How are you tracking with WBAs and your learning plan?", hint:"Mini-CEX, RCA, MSF, ECTV, learning plan inclusions, areas being addressed" }
+  ]},
+  { id:"requirements", title:"Training Requirements", icon:"📋", questions:[
+    { id:"requirements_status", q:"Which training requirements are coming up or overdue?", hint:"MSF, ECTV, Mini-CEX, RCA, mid-term report — include due dates if known" },
+    { id:"requirements_sgl", q:"How are SGLs going?", hint:"Attendance, any issues, upcoming SGL sessions" }
+  ]},
+  { id:"tlc", title:"Training Location Commitment", icon:"📍", questions:[
+    { id:"tlc_plans", q:"What are your Training Location Commitment plans?", hint:"Requirement: 26 weeks in an MM6–7 location. Discuss progress, upcoming placements and any barriers." },
+    { id:"tlc_exemption", q:"Is a TLC exemption applicable or being considered?", hint:"Document any exemption details, reason, and current status." }
+  ]},
+  { id:"future", title:"2026.2 Placement Plans", icon:"🗺️", questions:[
+    { id:"plans_2026", q:"What are your placement plans for 2026.2?", hint:"TIU 3–17 Mar, MPN cutoff 1 Jun. Continuing? New practice? AMS? Rural? NT incentivised placements available." },
+    { id:"plans_questions", q:"Any questions about the placement process?", hint:"Email sent 26/02/26. Flexible Funds, incentivised placement guidelines available." },
+    { id:"plans_longer", q:"Longer term — extended skills, rural, AMS, completion timeline?", hint:"Training location, rural generalist, outer metro, ALS/BLS, composite placements, extension of training" }
+  ]},
+  { id:"leave", title:"Leave", icon:"🏖️", questions:[
+    { id:"leave_plans", q:"Any leave plans in the next 6–12 months?", hint:"Refer to leave policy. Consider: MPN, CPD, RACGP membership implications" }
+  ]},
+  { id:"exams", title:"Exam Preparation", icon:"📝", examOnly:true, questions:[
+    { id:"exam_status", q:"What are your plans for sitting the exams?", hint:"AKT/KFP: 3–4 Jul 2026 | CCE: 7–8 or 14–15 Nov 2026 | Written prep: Thu 28 May" },
+    { id:"exam_prep", q:"How's preparation going? Any support needed?", hint:"Eligibility, candidacy, SAPTS, self-assessment grid, GP Learning, exam workshops. Support: PESIP, FLI, Remediation" }
+  ]},
+  { id:"concerns", title:"Issues & Concerns", icon:"⚠️", questions:[
+    { id:"concerns", q:"Anything else to raise — any issues or concerns?", hint:"Adverse events, who to contact: Local team, RLO, GPiT, JCTS, Rural, Aboriginal & Torres Strait Islander team" }
+  ]},
+  { id:"actions", title:"Actions", icon:"✅", questions:[
+    { id:"actions", q:"Actions arising from this meeting", hint:"Who does what, by when? Include both registrar and training team actions." }
+  ]}
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+
+let currentRegId = null;   // ID of registrar currently in meeting
+let activeSection = 0;
+let editingRegId = null;   // ID being edited in form (null = new)
+
+// ─── STORAGE ────────────────────────────────────────────────────────────────
+
+function loadAll() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { return {}; }
+}
+
+function saveAll(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function getRegistrars() {
+  const d = loadAll();
+  return d.registrars || {};
+}
+
+function saveRegistrarsObj(regsObj) {
+  const d = loadAll();
+  d.registrars = regsObj;
+  saveAll(d);
+}
+
+function getRegistrar(id) {
+  return getRegistrars()[id] || null;
+}
+
+function upsertRegistrar(reg) {
+  const regs = getRegistrars();
+  regs[reg.id] = reg;
+  saveRegistrarsObj(regs);
+}
+
+function deleteRegistrar(id) {
+  const regs = getRegistrars();
+  delete regs[id];
+  saveRegistrarsObj(regs);
+  if (currentRegId === id) currentRegId = null;
+}
+
+function saveNote(regId, noteId, value) {
+  const regs = getRegistrars();
+  if (!regs[regId]) return;
+  if (!regs[regId].notes) regs[regId].notes = {};
+  regs[regId].notes[noteId] = value;
+  saveRegistrarsObj(regs);
+  flashSaveIndicator();
+  updateProgress();
+}
+
+// ─── REGISTRAR LIST UI ──────────────────────────────────────────────────────
+
+function renderRegistrarList() {
+  const regs = getRegistrars();
+  const ids = Object.keys(regs).sort((a,b) => regs[a].name.localeCompare(regs[b].name));
+  const container = document.getElementById('registrarList');
+  const countEl = document.getElementById('regCount');
+  countEl.textContent = ids.length ? `(${ids.length})` : '';
+
+  if (!ids.length) {
+    container.innerHTML = '<div class="empty-state">No registrars saved yet.<br>Use the form above to add your first one.</div>';
+    return;
+  }
+
+  container.innerHTML = ids.map(id => {
+    const r = regs[id];
+    const notes = r.notes || {};
+    const visible = getVisibleSectionsForReg(r);
+    const total = visible.reduce((a,s)=>a+s.questions.length,0);
+    const filled = visible.reduce((a,s)=>a+s.questions.filter(q=>notes[q.id]&&notes[q.id].trim()).length,0);
+    const pct = total ? Math.round(filled/total*100) : 0;
+    const badgeClass = pct === 100 ? 'complete' : '';
+    const badgeText = pct === 100 ? '✓ Notes complete' : `${pct}% notes`;
+    return `<div class="reg-item" onclick="startMeeting('${id}')">
+      <div class="reg-item-info">
+        <div class="reg-item-name">${r.name}</div>
+        <div class="reg-item-sub">${r.level}${r.practice ? ' · ' + r.practice : ''}${r.supervisor ? ' · ' + r.supervisor : ''}${r.meetingDate ? ' · 📅 ' + formatDate(r.meetingDate) + (r.meetingTime ? ' ' + formatTime(r.meetingTime) : '') : ''}</div>
+        ${r.overdue ? `<div style="font-size:11px;color:#92400e;margin-top:2px;">⚠️ ${r.overdue.split('\n')[0]}${r.overdue.split('\n').length > 1 ? '…' : ''}</div>` : ''}
+      </div>
+      <span class="reg-item-badge ${badgeClass}">${badgeText}</span>
+      <button class="reg-delete" onclick="event.stopPropagation();confirmDelete('${id}')" title="Delete">✕</button>
+      <button style="padding:5px 12px;background:#1a3a2a;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:Georgia,serif;font-size:12px;white-space:nowrap;" onclick="event.stopPropagation();startMeeting('${id}')">
+        Open →
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function confirmDelete(id) {
+  const r = getRegistrar(id);
+  if (r && confirm(`Remove ${r.name} from the list? This cannot be undone.`)) {
+    deleteRegistrar(id);
+    renderRegistrarList();
+  }
+}
+
+// ─── FORM ───────────────────────────────────────────────────────────────────
+
+function formChanged() {
+  const name = document.getElementById('f-name').value.trim();
+  document.getElementById('saveFormBtn').disabled = !name;
+  // Show overdue alert
+  const overdue = document.getElementById('f-overdue').value.trim();
+  const alerts = document.getElementById('formAlerts');
+  let html = '';
+  if (overdue) html += `<div class="alert alert-yellow">⚠️ <strong>Overdue to discuss:</strong> ${overdue.replace(/\n/g,', ')}</div>`;
+  const notes = document.getElementById('f-notes').value.trim();
+  if (notes) html += `<div class="alert alert-blue">📌 ${notes}</div>`;
+  alerts.innerHTML = html;
+}
+
+function saveRegistrar() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) return;
+  const id = editingRegId || ('reg_' + Date.now());
+  const existing = editingRegId ? getRegistrar(editingRegId) : null;
+  const reg = {
+    id,
+    name,
+    level: document.getElementById('f-level').value,
+    practice: document.getElementById('f-practice').value.trim(),
+    supervisor: document.getElementById('f-supervisor').value.trim(),
+    meetingDate: document.getElementById('f-meetingdate').value,
+    meetingTime: document.getElementById('f-meetingtime').value,
+    overdue: document.getElementById('f-overdue').value.trim(),
+    preMeetingNotes: document.getElementById('f-notes').value.trim(),
+    examEligible: document.getElementById('f-exams').checked,
+    notes: existing ? (existing.notes || {}) : {},
+    savedAt: new Date().toISOString()
+  };
+  upsertRegistrar(reg);
+  editingRegId = null;
+  clearForm();
+  renderRegistrarList();
+  const ind = document.getElementById('savedIndicator');
+  ind.style.display = 'block';
+  setTimeout(() => ind.style.display = 'none', 2000);
+  document.getElementById('formTitle').textContent = 'Add Registrar';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+function clearForm() {
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-level').value = 'GPT1';
+  document.getElementById('f-practice').value = '';
+  document.getElementById('f-supervisor').value = '';
+  document.getElementById('f-meetingdate').value = '';
+  document.getElementById('f-meetingtime').value = '';
+  document.getElementById('f-overdue').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-exams').checked = false;
+  document.getElementById('formAlerts').innerHTML = '';
+  document.getElementById('saveFormBtn').disabled = true;
+}
+
+function editRegistrar(id) {
+  const r = getRegistrar(id);
+  if (!r) return;
+  editingRegId = id;
+  document.getElementById('f-name').value = r.name;
+  document.getElementById('f-level').value = r.level;
+  document.getElementById('f-practice').value = r.practice || '';
+  document.getElementById('f-supervisor').value = r.supervisor || '';
+  document.getElementById('f-meetingdate').value = r.meetingDate || '';
+  document.getElementById('f-meetingtime').value = r.meetingTime || '';
+  document.getElementById('f-overdue').value = r.overdue || '';
+  document.getElementById('f-notes').value = r.preMeetingNotes || '';
+  document.getElementById('f-exams').checked = r.examEligible || false;
+  document.getElementById('saveFormBtn').disabled = false;
+  document.getElementById('formTitle').textContent = 'Edit Registrar';
+  document.getElementById('cancelEditBtn').style.display = 'block';
+  formChanged();
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  editingRegId = null;
+  clearForm();
+  document.getElementById('formTitle').textContent = 'Add Registrar';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+// ─── MEETING ─────────────────────────────────────────────────────────────────
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+function formatTime(t) {
+  if (!t) return '';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr > 12 ? hr-12 : hr || 12}:${m}${hr >= 12 ? 'pm' : 'am'}`;
+}
+function getVisibleSectionsForReg(r) {
+  return SECTIONS.filter(s => !s.examOnly || r.examEligible || EXAM_LEVELS.includes(r.level));
+}
+
+function startMeeting(id) {
+  currentRegId = id;
+  activeSection = 0;
+  const r = getRegistrar(id);
+  if (!r) return;
+  // Update header
+  document.getElementById('headerName').textContent = r.name;
+  document.getElementById('headerSub').textContent = [r.level, r.practice, r.meetingDate ? '📅 ' + formatDate(r.meetingDate) + (r.meetingTime ? ' ' + formatTime(r.meetingTime) : '') : ''].filter(Boolean).join(' · ');
+  document.getElementById('headerRegistrar').style.display = 'block';
+  // Sidebar note
+  const sn = document.getElementById('sidebarNote');
+  if (r.preMeetingNotes) { sn.style.display='block'; sn.textContent='📌 ' + r.preMeetingNotes; }
+  else { sn.style.display='none'; }
+  renderNav();
+  renderSection();
+  goToTab('meeting');
+}
+
+function renderNav() {
+  const r = getRegistrar(currentRegId);
+  if (!r) return;
+  const visible = getVisibleSectionsForReg(r);
+  const notes = r.notes || {};
+  const container = document.getElementById('navButtons');
+  container.innerHTML = '';
+  visible.forEach((s, i) => {
+    const filled = s.questions.filter(q => notes[q.id] && notes[q.id].trim()).length;
+    const done = filled === s.questions.length;
+    const btn = document.createElement('button');
+    btn.className = 'nav-btn' + (i === activeSection ? ' active' : '');
+    btn.innerHTML = `<span style="font-size:14px">${s.icon}</span><span class="nav-title">${s.title}</span><span class="nav-check ${done?'done':''}">${done ? '✓' : filled+'/'+s.questions.length}</span>`;
+    btn.onclick = () => { activeSection = i; renderNav(); renderSection(); };
+    container.appendChild(btn);
+  });
+  updateProgress();
+}
+
+function updateProgress() {
+  const r = getRegistrar(currentRegId);
+  if (!r) return;
+  const visible = getVisibleSectionsForReg(r);
+  const notes = r.notes || {};
+  const total = visible.reduce((a,s)=>a+s.questions.length,0);
+  const filled = visible.reduce((a,s)=>a+s.questions.filter(q=>notes[q.id]&&notes[q.id].trim()).length,0);
+  const pct = total ? Math.round(filled/total*100) : 0;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+}
+
+function renderSection() {
+  const r = getRegistrar(currentRegId);
+  if (!r) return;
+  const visible = getVisibleSectionsForReg(r);
+  const s = visible[activeSection];
+  const notes = r.notes || {};
+  let html = `<div class="section-header"><span style="font-size:24px">${s.icon}</span><h2>${s.title}</h2></div>
+    <div class="section-sub">Section ${activeSection+1} of ${visible.length}</div>`;
+
+  if (r.overdue && s.id === 'requirements') {
+    html += `<div class="alert alert-yellow" style="margin-bottom:14px;">⚠️ Overdue items: ${r.overdue}</div>`;
+  }
+
+  // TLC section — special rendering
+  if (s.id === 'tlc') {
+    html += `<div class="alert alert-blue" style="margin-bottom:18px;">
+      📍 <strong>Requirement:</strong> 26 weeks in an MM6–7 location must be completed as part of training.
+    </div>`;
+
+    // TLC Plans textarea
+    html += `<div class="question-block">
+      <div class="question-text">"${s.questions[0].q}"</div>
+      <div class="question-hint">💡 ${s.questions[0].hint}</div>
+      <textarea class="notes-area" rows="4" placeholder="Notes from discussion..." data-id="tlc_plans" oninput="handleNoteInput(this)">${notes['tlc_plans'] || ''}</textarea>
+    </div>`;
+
+    // MM6-7 Region checkboxes
+    const regions = ['Top End Remote','Arnhem Land','Big Rivers','Central Australia','Barkly'];
+    const saved = notes['tlc_regions'] ? notes['tlc_regions'].split(',') : [];
+    html += `<div class="question-block">
+      <div class="question-text">MM6–MM7 Region/s of interest or planned</div>
+      <div class="question-hint">💡 Select all that apply</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;">
+        ${regions.map(reg => {
+          const checked = saved.includes(reg) ? 'checked' : '';
+          return `<label style="display:flex;align-items:center;gap:6px;background:#f9fafb;border:1.5px solid ${saved.includes(reg) ? '#1a3a2a' : '#e5e7eb'};border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;user-select:none;">
+            <input type="checkbox" value="${reg}" ${checked} onchange="saveTLCRegions()" style="accent-color:#1a3a2a;width:14px;height:14px;">
+            ${reg}
+          </label>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+    // TLC Exemption
+    html += `<div class="question-block">
+      <div class="question-text">"${s.questions[1].q}"</div>
+      <div class="question-hint">💡 ${s.questions[1].hint}</div>
+      <textarea class="notes-area" rows="3" placeholder="Exemption details, reason, current status..." data-id="tlc_exemption" oninput="handleNoteInput(this)">${notes['tlc_exemption'] || ''}</textarea>
+    </div>`;
+
+  } else {
+    s.questions.forEach(q => {
+      html += `<div class="question-block">
+        <div class="question-text">"${q.q}"</div>
+        <div class="question-hint">💡 ${q.hint}</div>
+        <textarea class="notes-area" rows="4" placeholder="Notes from discussion..." data-id="${q.id}" oninput="handleNoteInput(this)">${notes[q.id] || ''}</textarea>
+      </div>`;
+    });
+  }
+
+  html += `<div class="nav-row">
+    <button class="btn-back" onclick="prevSection()" ${activeSection===0?'disabled':''}>← Back</button>
+    ${activeSection < visible.length-1
+      ? `<button class="btn-next" onclick="nextSection()">Next →</button>`
+      : `<button class="btn-finish" onclick="goToSummary()">Generate Summary ✓</button>`}
+  </div>`;
+  document.getElementById('sectionCard').innerHTML = html;
+}
+
+function handleNoteInput(el) {
+  saveNote(currentRegId, el.dataset.id, el.value);
+}
+
+function saveTLCRegions() {
+  const checked = [...document.querySelectorAll('#sectionCard input[type=checkbox]:checked')].map(cb => cb.value);
+  saveNote(currentRegId, 'tlc_regions', checked.join(','));
+  // Update border colour on labels without re-rendering
+  document.querySelectorAll('#sectionCard input[type=checkbox]').forEach(cb => {
+    cb.closest('label').style.borderColor = cb.checked ? '#1a3a2a' : '#e5e7eb';
+  });
+}
+
+function prevSection() { if (activeSection > 0) { activeSection--; renderNav(); renderSection(); } }
+function nextSection() {
+  const r = getRegistrar(currentRegId);
+  if (!r) return;
+  const visible = getVisibleSectionsForReg(r);
+  if (activeSection < visible.length-1) { activeSection++; renderNav(); renderSection(); }
+}
+
+let saveFlashTimer;
+function flashSaveIndicator() {
+  const el = document.getElementById('saveIndicator');
+  el.textContent = '✓ Saved';
+  el.style.color = '#059669';
+  clearTimeout(saveFlashTimer);
+  saveFlashTimer = setTimeout(() => { el.textContent = '✓ Auto-saving'; el.style.color = '#9ca3af'; }, 1500);
+}
+
+// ─── SUMMARY ─────────────────────────────────────────────────────────────────
+
+function goToSummary() {
+  document.getElementById('summaryText').value = buildSummary();
+  renderSummaryLinks();
+  goToTab('summary');
+}
+
+function buildSummary() {
+  const r = getRegistrar(currentRegId);
+  if (!r) return '';
+  const notes = r.notes || {};
+  const hasExams = r.examEligible || EXAM_LEVELS.includes(r.level);
+  let lines = [];
+
+  lines.push(`Journal: ${r.name} | ${r.level}${r.practice ? ' | ' + r.practice : ''}`);
+  if (r.meetingDate || r.meetingTime) {
+    lines.push(`Date: ${r.meetingDate ? formatDate(r.meetingDate) : ''}${r.meetingTime ? ' at ' + formatTime(r.meetingTime) : ''}`);
+  }
+  lines.push("");
+
+  const wb = [notes.wellbeing_general, notes.wellbeing_support].filter(Boolean).join(" ");
+  if (wb) { lines.push(wb); lines.push(""); }
+
+  const pl = [notes.placement_overview, notes.placement_supervisor, notes.placement_site, notes.placement_wba].filter(Boolean).join(" ");
+  if (pl) { lines.push(pl); lines.push(""); }
+
+  const c = (notes.concerns||"").trim().toLowerCase();
+  if (notes.concerns && c!=="nil" && c!=="none" && c!=="no concerns") {
+    lines.push(notes.concerns.trim());
+  } else { lines.push("No concerns identified."); }
+  lines.push("");
+
+  lines.push("Training requirements:");
+  if (r.overdue) r.overdue.split(/[\n,]/).map(s=>s.trim()).filter(Boolean).forEach(i=>lines.push(i));
+  if (notes.requirements_status) notes.requirements_status.split(/\n/).map(s=>s.trim()).filter(Boolean).forEach(i=>lines.push(i));
+  if (notes.requirements_sgl) lines.push(notes.requirements_sgl.trim());
+  lines.push("");
+
+  // TLC
+  const tlcHasContent = notes.tlc_plans || notes.tlc_regions || notes.tlc_exemption;
+  if (tlcHasContent) {
+    lines.push("Training Location Commitment (26 weeks MM6–7 required):");
+    if (notes.tlc_regions) lines.push("MM6–7 Region/s: " + notes.tlc_regions);
+    if (notes.tlc_plans) notes.tlc_plans.split(/\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>lines.push(l));
+    if (notes.tlc_exemption) lines.push("TLC Exemption: " + notes.tlc_exemption.trim());
+    lines.push("");
+  }
+
+  lines.push("2026.2 Plans:");
+  [notes.plans_2026, notes.plans_questions, notes.plans_longer].filter(Boolean).forEach(n=>{
+    n.split(/\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>lines.push(l));
+  });
+  lines.push("");
+
+  lines.push("Leave: " + (notes.leave_plans||"No leave plans at this stage."));
+  lines.push("");
+
+  if (hasExams) {
+    lines.push("Exam Plans:");
+    [notes.exam_status, notes.exam_prep].filter(Boolean).forEach(n=>{
+      n.split(/\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>lines.push(l));
+    });
+    lines.push("AKT/KFP – 3–4 July 2026");
+    lines.push("CCE – 7–8 November 2026 or 14–15 November 2026");
+    lines.push("Written exam prep session – Thursday 28 May 2026 (link provided closer to the time)");
+    lines.push("");
+  }
+
+  lines.push("Events of Interest:");
+  lines.push("13 August 2026 – POCUS: Introduction to point-of-care ultrasound workshops – $765");
+  lines.push("14–15 August 2026 – Compass 2026 – free");
+  lines.push("");
+
+  lines.push("Resources:");
+  lines.push("2026.2 Placement process timelines 3 March – 1 June 2026");
+  lines.push("Training Intention update (TIU) completion – 3–17 March 2026");
+  lines.push("MPN cutoff – 1 June 2026");
+  lines.push("For PHCR placements, refer to Northern Territory – 2026.2 Incentivised Placements for available funding");
+  lines.push("Incentivised placement guidelines");
+  lines.push("Flexible Funds Policy");
+  lines.push("Leave Policy & Leave from training application");
+  lines.push("");
+
+  lines.push("Support & Contacts:");
+  lines.push("Your current employer EAP");
+  lines.push("DRS4DRS");
+  lines.push("RACGP wellbeing webpage");
+  lines.push("The GP support program");
+  lines.push("AGPT Registrar training handbook also lists various supports");
+  lines.push("The National Terms and Conditions for the Employment of Registrars (NTCER)");
+  lines.push("");
+
+  lines.push("Actions:");
+  if (notes.actions) {
+    notes.actions.split(/\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>lines.push(l));
+  } else { lines.push("[None recorded]"); }
+
+  return lines.join("\n");
+}
+
+function renderSummaryLinks() {
+  const dates = loadDates();
+  const container = document.getElementById('summaryLinksList');
+  if (!dates.length) {
+    container.innerHTML = '<p style="font-size:13px;color:#9ca3af;">No dates or links saved yet. Add them in the Registrars tab.</p>';
+    return;
+  }
+  container.innerHTML = dates.map((item, idx) => {
+    const hasLink = item.url && item.url.trim();
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6;">
+      <input type="checkbox" id="lnk_${idx}" checked
+        style="width:14px;height:14px;accent-color:#1a3a2a;flex-shrink:0;cursor:pointer;">
+      <label for="lnk_${idx}" style="flex:1;font-size:13px;color:#374151;cursor:pointer;line-height:1.4;">${item.text || '(no text)'}</label>
+      ${hasLink
+        ? `<a href="${item.url}" target="_blank" title="Open link" style="font-size:16px;text-decoration:none;flex-shrink:0;">🔗</a>`
+        : `<span style="font-size:16px;opacity:0.2;flex-shrink:0;" title="No link added">🔗</span>`}
+    </div>`;
+  }).join('');
+}
+
+function checkAllLinks(checked) {
+  document.querySelectorAll('#summaryLinksList input[type=checkbox]').forEach(cb => cb.checked = checked);
+}
+
+function copySummary() {
+  const dates = loadDates();
+  const checkboxes = [...document.querySelectorAll('#summaryLinksList input[type=checkbox]')];
+  const selectedItems = checkboxes
+    .map((cb, i) => cb.checked && dates[i] ? dates[i] : null)
+    .filter(Boolean);
+
+  const plainBody = document.getElementById('summaryText').value.trim();
+
+  // ── Plain text version ──────────────────────────────────────────────────
+  let plainText = plainBody;
+  if (selectedItems.length) {
+    plainText += '\n\nKey Dates & Links:\n' +
+      selectedItems.map(d => d.url ? `${d.text} – ${d.url}` : d.text).join('\n');
+  }
+
+  // ── Rich text (HTML) version — links become clickable hyperlinks ────────
+  // Convert the plain summary body: newlines → <br>, blank lines → paragraph breaks
+  const bodyHtml = plainBody
+    .split('\n')
+    .map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return '</p><p style="margin:0 0 4px 0;">';
+      // Bold section headers (lines ending with : and no leading bullet)
+      if (/^[A-Z][^a-z]{2,}.*:$/.test(trimmed) || /^(Journal|Training requirements|2026\.2 Plans|Leave|Exam Plans|Events of Interest|Resources|Support|Actions|Training Location)/.test(trimmed)) {
+        return `<strong>${trimmed}</strong>`;
+      }
+      return trimmed;
+    })
+    .join('<br>');
+
+  let linksHtml = '';
+  if (selectedItems.length) {
+    const rows = selectedItems.map(d => {
+      if (d.url && d.url.trim()) {
+        return `<br><a href="${d.url}" style="color:#1a3a2a;">${d.text}</a>`;
+      }
+      return `<br>${d.text}`;
+    }).join('');
+    linksHtml = `<br><br><strong>Key Dates &amp; Links:</strong>${rows}`;
+  }
+
+  const html = `<html><body><p style="font-family:Georgia,serif;font-size:14px;line-height:1.8;white-space:pre-wrap;">
+    <p style="margin:0 0 4px 0;">${bodyHtml}</p>${linksHtml}
+  </p></body></html>`;
+
+  // Write both formats — rich text pastes as hyperlinks, plain text as fallback
+  try {
+    const clipItems = {
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([plainText], { type: 'text/plain' }),
+    };
+    navigator.clipboard.write([new ClipboardItem(clipItems)]).then(() => flashCopyButtons());
+  } catch(e) {
+    // Fallback to plain text if rich copy not supported
+    navigator.clipboard.writeText(plainText).then(() => flashCopyButtons());
+  }
+}
+
+function flashCopyButtons() {
+  ['copyBtnTop','copyBtnBig'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2500);
+  });
+}
+
+
+function markComplete() {
+  const r = getRegistrar(currentRegId);
+  if (!r) return;
+  if (confirm(`Mark ${r.name} as complete and remove from the list?\n\nMake sure you've already pasted the summary into the training system.`)) {
+    deleteRegistrar(currentRegId);
+    currentRegId = null;
+    document.getElementById('headerRegistrar').style.display = 'none';
+    renderRegistrarList();
+    goToTab('setup');
+  }
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+
+function canGoMeeting() { return !!currentRegId; }
+function canGoSummary() { return !!currentRegId; }
+
+function goToTab(tab) {
+  ['setup','meeting','summary'].forEach(t => {
+    document.getElementById('phase-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  document.getElementById('progressWrap').style.display = tab==='meeting' ? 'flex' : 'none';
+}
+
+function toggleGuide() {
+  const g = document.getElementById('guide');
+  g.style.display = g.style.display==='block' ? 'none' : 'block';
+}
+
+// ─── EDITABLE KEY DATES ──────────────────────────────────────────────────────
+
+const DEFAULT_DATES = [
+  { text: "TIU completion – 3–17 March 2026", url: "" },
+  { text: "Written exam prep – Thursday 28 May 2026", url: "" },
+  { text: "MPN cutoff – 1 June 2026", url: "" },
+  { text: "AKT/KFP – 3–4 July 2026", url: "" },
+  { text: "POCUS workshop – 13 August 2026 ($765)", url: "" },
+  { text: "Compass 2026 – 14–15 August 2026 (free)", url: "" },
+  { text: "CCE – 7–8 or 14–15 November 2026", url: "" },
+  { text: "── Support & Contacts ──", url: "" },
+  { text: "Your current employer EAP", url: "" },
+  { text: "DRS4DRS", url: "" },
+  { text: "RACGP wellbeing webpage", url: "" },
+  { text: "The GP support program", url: "" },
+  { text: "AGPT Registrar training handbook", url: "" },
+];
+
+const DATES_KEY = "ta_dashboard_dates_v2";
+
+function loadDates() {
+  try { return JSON.parse(localStorage.getItem(DATES_KEY)) || DEFAULT_DATES.map((d,i)=>({...d,id:i})); }
+  catch(e) { return DEFAULT_DATES.map((d,i)=>({...d,id:i})); }
+}
+
+function saveDates(dates) {
+  localStorage.setItem(DATES_KEY, JSON.stringify(dates));
+  flashDatesSaved();
+}
+
+function flashDatesSaved() {
+  const el = document.getElementById('datesSaveMsg');
+  el.textContent = '✓ Saved';
+  setTimeout(()=>{ el.textContent=''; }, 1800);
+}
+
+let dragSrcIdx = null;
+
+function renderDates() {
+  const dates = loadDates();
+  const container = document.getElementById('datesContainer');
+  container.innerHTML = '';
+  dates.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:stretch;gap:8px;margin-bottom:6px;';
+    row.draggable = true;
+    row.addEventListener('dragstart', () => { dragSrcIdx = idx; row.style.opacity = '0.4'; });
+    row.addEventListener('dragend', () => { row.style.opacity = '1'; });
+    row.addEventListener('dragover', e => { e.preventDefault(); row.style.background='#f0f7f3'; });
+    row.addEventListener('dragleave', () => { row.style.background=''; });
+    row.addEventListener('drop', e => {
+      e.preventDefault(); row.style.background='';
+      if (dragSrcIdx === null || dragSrcIdx === idx) return;
+      const dates2 = loadDates();
+      const [moved] = dates2.splice(dragSrcIdx, 1);
+      dates2.splice(idx, 0, moved);
+      saveDates(dates2);
+      renderDates();
+    });
+
+    const handle = document.createElement('span');
+    handle.textContent = '🟰';
+    handle.title = 'Drag to reorder';
+    handle.style.cssText = 'cursor:grab;font-size:14px;padding:8px 4px;color:#d1d5db;display:flex;align-items:center;flex-shrink:0;';
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.value = item.text;
+    textInput.placeholder = 'Date or event description';
+    textInput.style.cssText = 'flex:1;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:13px;font-family:Georgia,serif;color:#374151;';
+    textInput.onchange = () => {
+      const d = loadDates(); d[idx].text = textInput.value; saveDates(d);
+    };
+
+    const urlInput = document.createElement('input');
+    urlInput.type = 'text';
+    urlInput.value = item.url || '';
+    urlInput.placeholder = 'Paste link (optional)';
+    urlInput.style.cssText = 'width:200px;flex-shrink:0;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:Georgia,serif;color:#1a3a2a;';
+    urlInput.onchange = () => {
+      const d = loadDates(); d[idx].url = urlInput.value.trim(); saveDates(d);
+    };
+
+    const preview = document.createElement('a');
+    preview.style.cssText = 'display:flex;align-items:center;font-size:18px;text-decoration:none;flex-shrink:0;';
+    if (item.url) { preview.href = item.url; preview.target='_blank'; preview.title='Open link'; preview.textContent='🔗'; }
+    else { preview.style.opacity='0.2'; preview.textContent='🔗'; }
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.title = 'Remove row';
+    delBtn.style.cssText = 'background:none;border:none;color:#d1d5db;cursor:pointer;font-size:15px;padding:6px 8px;border-radius:4px;flex-shrink:0;';
+    delBtn.onmouseover = () => { delBtn.style.color='#ef4444'; delBtn.style.background='#fef2f2'; };
+    delBtn.onmouseout = () => { delBtn.style.color='#d1d5db'; delBtn.style.background='none'; };
+    delBtn.onclick = () => {
+      const d = loadDates(); d.splice(idx,1); saveDates(d); renderDates();
+    };
+
+    row.append(handle, textInput, urlInput, preview, delBtn);
+    container.appendChild(row);
+  });
+}
+
+function addDateRow() {
+  const d = loadDates();
+  d.push({ text: '', url: '', id: Date.now() });
+  saveDates(d);
+  renderDates();
+  // Focus the new text input
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#datesContainer input[type=text]');
+    if (inputs.length) inputs[inputs.length - 2].focus();
+  }, 50);
+}
+
+function resetDates() {
+  if (confirm('Reset Key Dates to the defaults? This will remove any changes you\'ve made.')) {
+    localStorage.removeItem(DATES_KEY);
+    renderDates();
+  }
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+
+function exportData() {
+  const data = loadAll();
+  const dates = loadDates();
+  const exportObj = { version: 2, exportedAt: new Date().toISOString(), data, dates };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toLocaleDateString('en-AU').replace(/\//g, '-');
+  a.href = url;
+  a.download = `TA-Dashboard-Backup-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  flashImportExportMsg('✓ Backup downloaded!');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importObj = JSON.parse(e.target.result);
+      if (!importObj.data && !importObj.dates) throw new Error('Invalid file');
+      const regCount = Object.keys(importObj.data?.registrars || {}).length;
+      const msg = `This will import ${regCount} registrar${regCount !== 1 ? 's' : ''} and your saved dates/links.\n\nAny existing data on this device will be replaced. Continue?`;
+      if (!confirm(msg)) { event.target.value = ''; return; }
+      if (importObj.data) saveAll(importObj.data);
+      if (importObj.dates) localStorage.setItem(DATES_KEY, JSON.stringify(importObj.dates));
+      renderRegistrarList();
+      renderDates();
+      flashImportExportMsg(`✓ Imported ${regCount} registrar${regCount !== 1 ? 's' : ''} successfully!`);
+    } catch(err) {
+      alert('Could not read the backup file. Please make sure you are using a file exported from this dashboard.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function flashImportExportMsg(msg) {
+  const el = document.getElementById('importExportMsg');
+  el.textContent = msg;
+  setTimeout(() => el.textContent = '', 4000);
+}
+
+
+
+renderRegistrarList();
+renderDates();
+</script>
+</body>
+</html>
